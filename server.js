@@ -1,22 +1,75 @@
-import express from 'express';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import express from "express";
+import fs from "fs";
+import path from "path";
+import bcrypt from "bcrypt";
+import { fileURLToPath } from "url";
 
 const app = express();
 const PORT = 3000;
 
-// Fix for __dirname
+// Fix for __dirname (in ES modules)
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static('public'));
+app.use(express.static("public"));
 
-// Routes
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+// Path to users.json
+const usersFile = path.join(__dirname, "db", "users.json");
+
+// loadUsers() and saveUsers() can belater swapped for proper DB - sqlite/mongo/...
+
+// Helper to load users
+function loadUsers() {
+  if (!fs.existsSync(usersFile)) return [];
+  const data = fs.readFileSync(usersFile);
+  return JSON.parse(data);
+}
+
+// Helper to save users
+function saveUsers(users) {
+  fs.writeFileSync(usersFile, JSON.stringify(users, null, 2));
+}
+
+// Route: Register
+app.post("/register", async (req, res) => {
+  const { username, password } = req.body;
+  const users = loadUsers();
+
+  // Check if username already exists
+  if (users.find((u) => u.username === username)) {
+    return res.send("Username already exists. Please choose another.");
+  }
+
+  // Hash password
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  // Save new user
+  users.push({ username, passwordHash: hashedPassword });
+  saveUsers(users);
+
+  res.send("Registration successful! <a href='/login.html'>Login here</a>");
+});
+
+// Route: Login
+app.post("/login", async (req, res) => {
+  const { username, password } = req.body;
+  const users = loadUsers();
+
+  const user = users.find((u) => u.username === username);
+  if (!user) {
+    return res.send("User not found. <a href='/register.html'>Register here</a>");
+  }
+
+  // Compare password with hash
+  const match = await bcrypt.compare(password, user.passwordHash);
+  if (!match) {
+    return res.send("Invalid password. Try again.");
+  }
+
+  res.send("Login successful! 🎉 Welcome, " + username);
 });
 
 // Start server
