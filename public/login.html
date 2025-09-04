@@ -9,12 +9,24 @@
 <body>
   <h1>Simple Website - Login</h1>
 
-  <form action="/login" method="POST">
-    <input type="text" name="username" placeholder="Username" required><br>
-    <input type="password" name="password" placeholder="Password" required><br>
+  <p id="login-msg"></p>
+
+  <form id="login-form">
+    <input type="text" id="username" name="username" placeholder="Username" required><br>
+    <input type="password" id="password" name="password" placeholder="Password" required><br>
     <button type="submit" class="btn">Login</button>
   </form>
 
   <a href="index.html" class="btn">Return to Main Menu</a>
+
+  <script>
+    // Show success message if redirected from registration
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("msg") === "registered") {
+      const msg = document.getElementById("login-msg");
+      msg.textContent = "✅ Registration successful! Please log in.";
+      msg.style.color = "green";
+    }
+  </script>
 </body>
 </html>

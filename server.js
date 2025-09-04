@@ -40,7 +40,7 @@ app.post("/register", async (req, res) => {
 
   // Check if username already exists
   if (users.find((u) => u.username === username)) {
-    return res.send("Username already exists. Please choose another.");
+    return res.json({ success: false, message: "Username already exists. Please choose another." });
   }
 
   // Hash password
@@ -50,8 +50,10 @@ app.post("/register", async (req, res) => {
   users.push({ username, passwordHash: hashedPassword });
   saveUsers(users);
 
-  res.send("Registration successful! <a href='/login.html'>Login here</a>");
+  res.json({ success: true, message: "Registration successful! You can now log in." });
 });
+
+
 
 // Route: Login
 app.post("/login", async (req, res) => {
