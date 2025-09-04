@@ -12,37 +12,71 @@
   <form id="register-form">
     <input type="text" id="username" name="username" placeholder="Username" required><br>
     <p id="user-msg"></p>
+
     <input type="password" id="password" name="password" placeholder="Password" required><br>
+    <p id="pw-msg"></p>
+
     <button type="submit" class="btn">Register</button>
   </form>
 
   <a href="index.html" class="btn">Return to Main Menu</a>
 
-<script>
-  document.getElementById("register-form").addEventListener("submit", async (e) => {
-    e.preventDefault();
+  <script>
+    const pwInput = document.getElementById("password");
+    const pwMsg = document.getElementById("pw-msg");
 
-    const username = document.getElementById("username").value;
-    const password = document.getElementById("password").value;
-    const msg = document.getElementById("user-msg");
+    function checkPasswordStrength(pw) {
+      const groups = [
+        /[a-z]/.test(pw),  // lowercase
+        /[A-Z]/.test(pw),  // uppercase
+        /[0-9]/.test(pw),  // numbers
+        /[^a-zA-Z0-9]/.test(pw) // special chars
+      ];
 
-    const res = await fetch("/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password })
+      const groupCount = groups.filter(Boolean).length;
+
+      if (pw.length < 8) {
+        return { valid: false, message: "❌ Password must be at least 8 characters long." };
+      }
+      if (groupCount < 2) {
+        return { valid: false, message: "❌ Use at least 2 types: uppercase, lowercase, numbers, special characters." };
+      }
+      return { valid: true, message: "✅ Password looks good!" };
+    }
+
+    pwInput.addEventListener("input", () => {
+      const result = checkPasswordStrength(pwInput.value);
+      pwMsg.textContent = result.message;
+      pwMsg.style.color = result.valid ? "green" : "red";
     });
 
-    const data = await res.json();
+    // Prevent form submit if password invalid
+    document.getElementById("register-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const pw = pwInput.value;
+      const result = checkPasswordStrength(pw);
 
-    if (data.success) {
-      // Redirect to login page with success flag
-      window.location.href = "login.html?msg=registered";
-    } else {
-      msg.textContent = "❌ " + data.message;
-      msg.style.color = "red";
-    }
-  });
-</script>
+      if (!result.valid) {
+        pwMsg.textContent = result.message;
+        pwMsg.style.color = "red";
+        return; // don’t send to server
+      }
 
+      // Send to server if valid
+      const username = document.getElementById("username").value;
+      const res = await fetch("/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password: pw })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        window.location.href = "login.html?msg=registered";
+      } else {
+        document.getElementById("user-msg").textContent = "❌ " + data.message;
+      }
+    });
+  </script>
 </body>
 </html>
