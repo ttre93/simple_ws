@@ -34,13 +34,38 @@ function saveUsers(users) {
 }
 
 // Route: Register
+function isPasswordValid(pw) {
+  const groups = [
+    /[a-z]/.test(pw),      // lowercase
+    /[A-Z]/.test(pw),      // uppercase
+    /[0-9]/.test(pw),      // numbers
+    /[^a-zA-Z0-9]/.test(pw) // special chars
+  ];
+
+  const groupCount = groups.filter(Boolean).length;
+
+  if (pw.length < 8) {
+    return { valid: false, message: "Password must be at least 8 characters long." };
+  }
+  if (groupCount < 2) {
+    return { valid: false, message: "Password must include at least 2 types: uppercase, lowercase, numbers, or special characters." };
+  }
+  return { valid: true };
+}
+
 app.post("/register", async (req, res) => {
   const { username, password } = req.body;
   const users = loadUsers();
 
-  // Check if username already exists
+  // Username check
   if (users.find((u) => u.username === username)) {
     return res.json({ success: false, message: "Username already exists. Please choose another." });
+  }
+
+  // Password check (server-side)
+  const pwCheck = isPasswordValid(password);
+  if (!pwCheck.valid) {
+    return res.json({ success: false, message: pwCheck.message });
   }
 
   // Hash password
@@ -52,6 +77,7 @@ app.post("/register", async (req, res) => {
 
   res.json({ success: true, message: "Registration successful! You can now log in." });
 });
+
 
 
 
